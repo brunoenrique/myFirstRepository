@@ -1,0 +1,66 @@
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import javax.crypto.Cipher;
+import java.util.Base64;
+
+public class RSACredentialEncryption {
+
+    // Generar un par de claves RSA
+    public static KeyPair generateKeyPair() throws Exception {
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(2048); // Puedes usar 1024, 2048 o 4096 bits
+        return keyGen.generateKeyPair();
+    }
+
+    // Encriptar datos usando la clave pública
+    public static String encrypt(String data, PublicKey publicKey) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        byte[] encryptedBytes = cipher.doFinal(data.getBytes());
+        return Base64.getEncoder().encodeToString(encryptedBytes);
+    }
+
+    // Desencriptar datos usando la clave privada
+    public static String decrypt(String encryptedData, PrivateKey privateKey) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedData));
+        return new String(decryptedBytes);
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Generar par de claves
+            KeyPair keyPair = generateKeyPair();
+            PublicKey publicKey = keyPair.getPublic();
+            PrivateKey privateKey = keyPair.getPrivate();
+
+            // Credenciales a encriptar
+            String username = "usuario";
+            String password = "contraseña";
+
+            // Encriptar
+            String encryptedUsername = encrypt(username, publicKey);
+            String encryptedPassword = encrypt(password, publicKey);
+
+            System.out.println("Username Encriptado: " + encryptedUsername);
+            System.out.println("Password Encriptado: " + encryptedPassword);
+
+            // Desencriptar
+            String decryptedUsername = decrypt(encryptedUsername, privateKey);
+            String decryptedPassword = decrypt(encryptedPassword, privateKey);
+
+            System.out.println("Username Desencriptado: " + decryptedUsername);
+            System.out.println("Password Desencriptado: " + decryptedPassword);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

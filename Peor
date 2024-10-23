@@ -1,0 +1,65 @@
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import javax.crypto.Cipher;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.*;
+import java.security.spec.*;
+
+public class RsaEncryption {
+
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
+    public static PublicKey loadPublicKey(String filename) throws Exception {
+        byte[] keyBytes = Files.readAllBytes(Paths.get(filename));
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(keyBytes);
+        return keyFactory.generatePublic(new X509EncodedKeySpec(subjectPublicKeyInfo.getEncoded()));
+    }
+
+    public static PrivateKey loadPrivateKey(String filename) throws Exception {
+        byte[] keyBytes = Files.readAllBytes(Paths.get(filename));
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.getInstance(keyBytes);
+        return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyInfo.getEncoded()));
+    }
+
+    public static byte[] encrypt(String data, PublicKey publicKey) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        return cipher.doFinal(data.getBytes());
+    }
+
+    public static String decrypt(byte[] data, PrivateKey privateKey) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        return new String(cipher.doFinal(data));
+    }
+
+    public static void main(String[] args) {
+        try {
+            PublicKey publicKey = loadPublicKey("public_key.pem");
+            PrivateKey privateKey = loadPrivateKey("private_key.pem");
+
+            String originalText = "Texto a encriptar";
+            System.out.println("Texto original: " + originalText);
+
+            // Encriptar
+            byte[] encryptedText = encrypt(originalText, publicKey);
+            System.out.println("Texto encriptado: " + new String(encryptedText));
+
+            // Desencriptar
+            String decryptedText = decrypt(encryptedText, privateKey);
+            System.out.println("Texto desencriptado: " + decryptedText);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
